@@ -3,10 +3,12 @@ import sys
 import json
 import asyncio
 import time
+import cv2
 import numpy as np
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -63,9 +65,29 @@ async def shutdown():
     camera_mgr.release()
 
 
+def _ensure_camera():
+    if camera_mgr.cap is None or not camera_mgr.cap.isOpened():
+        return camera_mgr.open()
+    return True
+
+
+@app.get("/api/camera/frame.jpg")
+async def camera_frame():
+    if not _ensure_camera():
+        return {"error": "No camera available"}
+    frame = camera_mgr.read()
+    if frame is None:
+        return {"error": "No frame"}
+    _, jpeg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
+    from fastapi.responses import Response
+    return Response(content=jpeg.tobytes(), media_type="image/jpeg")
+
+
 @app.post("/api/tracking/start")
 async def start_tracking():
     global tracking_active, frame_number, current_H
+    if not _ensure_camera():
+        return {"status": "error", "message": "No camera available"}
     tracking_active = True
     frame_number = 0
 

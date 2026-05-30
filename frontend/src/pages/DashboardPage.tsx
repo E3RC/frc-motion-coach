@@ -12,6 +12,7 @@ export default function DashboardPage() {
   const [driverName, setDriverName] = useState('');
   const [path, setPath] = useState<{ x: number; y: number }[]>([]);
   const [currentPos, setCurrentPos] = useState<{ x: number; y: number } | null>(null);
+  const [frameTs, setFrameTs] = useState(0);
 
   const { data: liveData, connected } = useWebSocket('/api/ws/live-tracking');
 
@@ -21,6 +22,12 @@ export default function DashboardPage() {
       setPath(prev => [...prev.slice(-500), { x: liveData.field_x, y: liveData.field_y }]);
     }
   }, [liveData]);
+
+  useEffect(() => {
+    if (!tracking) return;
+    const id = setInterval(() => setFrameTs(t => t + 1), 50);
+    return () => clearInterval(id);
+  }, [tracking]);
 
   const handleStartTracking = async () => {
     await api.startTracking();
@@ -73,15 +80,26 @@ export default function DashboardPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={cardStyle}>
             <h3 style={h3Style}>Camera Feed</h3>
-            <div style={{
-              width: '100%', height: 360, background: 'var(--fmc-surface)',
-              borderRadius: 8, display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              color: 'var(--fmc-text-muted)', fontSize: 13, gap: 8,
-            }}>
-              <span style={{ fontSize: 40, opacity: 0.3 }}>📷</span>
-              <div>Camera feed appears here when tracking is active</div>
-            </div>
+            {tracking ? (
+              <img
+                src={`/api/camera/frame.jpg?t=${frameTs}`}
+                alt="Camera feed"
+                style={{
+                  width: '100%', height: 360, borderRadius: 8,
+                  objectFit: 'contain', background: '#000',
+                }}
+              />
+            ) : (
+              <div style={{
+                width: '100%', height: 360, background: 'var(--fmc-surface)',
+                borderRadius: 8, display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                color: 'var(--fmc-text-muted)', fontSize: 13, gap: 8,
+              }}>
+                <span style={{ fontSize: 40, opacity: 0.3 }}>📷</span>
+                <div>Press "Start Camera Tracking" to begin</div>
+              </div>
+            )}
           </div>
 
           <div style={cardStyle}>
