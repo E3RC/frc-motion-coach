@@ -10,8 +10,15 @@ class TestDatabase:
         self.tmp = tempfile.mktemp(suffix=".db")
         self.db = Database(self.tmp)
         yield
-        if os.path.exists(self.tmp):
-            os.remove(self.tmp)
+        self.db.close()
+        import time
+        for _ in range(5):
+            try:
+                if os.path.exists(self.tmp):
+                    os.remove(self.tmp)
+                break
+            except PermissionError:
+                time.sleep(0.1)
 
     def test_save_and_get_calibration(self):
         cal_id = self.db.save_calibration({

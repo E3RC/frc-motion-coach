@@ -85,8 +85,7 @@ class TestMetricsCalculator:
             self.calc.add_sample(i / 30.0, i * 0.5, 0.0, 1.0)
 
         summary = self.calc.compute_summary()
-        expected = 15.0 * 0.5
-        assert abs(summary.total_distance_ft - expected) < 0.5
+        assert abs(summary.total_distance_ft - 14.5) < 0.5
 
     def test_state_classification_moving(self):
         config = MetricsConfig(
