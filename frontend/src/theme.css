@@ -1,0 +1,16 @@
+:root {
+  --fmc-blue: #0057D9;
+  --fmc-charcoal: #101820;
+  --fmc-white: #FFFFFF;
+  --fmc-light-gray: #D9DEE7;
+  --fmc-motion-green: #22A83A;
+  --fmc-alert-orange: #FF7A00;
+  --fmc-danger: #D62828;
+  --fmc-bg: #101820;
+  --fmc-surface: #1B2733;
+  --fmc-border: #2A3A4A;
+  --fmc-text: #E8EDF2;
+  --fmc-text-muted: #8D98A6;
+  --fmc-font-ui: "Inter", system-ui, sans-serif;
+  --fmc-font-display: "Rajdhani", "Oxanium", "Inter", sans-serif;
+}

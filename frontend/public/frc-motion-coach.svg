@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">FRC Motion Coach vector logo</title>
+  <desc id="desc">Vector logo for FRC Motion Coach featuring a robot with 1555 bumper number, camera tracking reticle, motion path, coordinate grid, and wordmark.</desc>
+  <defs>
+    <style>
+      .blue{fill:#0057D9}.blueStroke{stroke:#0057D9}.charcoal{fill:#101820}.green{fill:#22A83A}.greenStroke{stroke:#22A83A}.orange{fill:#FF7A00}.gray{fill:#6F7885}.lightGray{stroke:#D9DEE7}.midGray{stroke:#8D98A6}.white{fill:#FFFFFF}.none{fill:none}.round{stroke-linecap:round;stroke-linejoin:round}.word{font-family:Rajdhani,Oxanium,Arial Black,Arial,sans-serif;font-weight:900;font-style:italic;letter-spacing:-8px}.tag{font-family:Inter,Montserrat,Arial,sans-serif;font-weight:800;letter-spacing:9px}.num{font-family:Rajdhani,Arial Black,Arial,sans-serif;font-weight:900;font-style:italic}.axis{font-family:Inter,Arial,sans-serif;font-weight:800}.dash{stroke-dasharray:12 12}
+    </style>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#101820" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="700" fill="#fff"/>
+  <g opacity="0.9">
+    <path d="M70 585 L320 585 M70 585 L70 395" class="none midGray round" stroke-width="4"/>
+    <path d="M320 585 l-20 -12 v24 z M70 395 l-12 20 h24 z" fill="#8D98A6"/>
+    <text x="330" y="592" class="gray axis" font-size="28">x</text>
+    <text x="55" y="382" class="gray axis" font-size="28">y</text>
+    <path d="M115 540 H610 M130 485 H595 M155 430 H570 M180 375 H545" class="none lightGray dash" stroke-width="2"/>
+    <path d="M115 540 L245 365 M210 540 L340 365 M305 540 L435 365 M400 540 L530 365" class="none lightGray" stroke-width="2"/>
+  </g>
+  <g transform="translate(335 265)">
+    <circle r="92" class="none blueStroke" stroke-width="7"/>
+    <circle r="58" class="none blueStroke" stroke-width="4"/>
+    <circle r="118" class="none midGray dash" stroke-width="3"/>
+    <path d="M-145 0 h55 M90 0 h55 M0 -145 v55 M0 90 v55" class="none blueStroke round" stroke-width="5"/>
+    <path d="M-132 -45 A140 140 0 0 1 -14 -139 M14 -139 A140 140 0 0 1 132 -45 M132 45 A140 140 0 0 1 45 132 M-45 132 A140 140 0 0 1 -132 45" class="none blueStroke round" stroke-width="9"/>
+    <circle r="36" class="charcoal"/>
+    <circle r="24" fill="#233244"/>
+    <circle r="13" fill="#050B12"/>
+    <circle cx="16" cy="-17" r="12" class="white" opacity="0.95"/>
+    <circle cx="-8" cy="10" r="4" class="white" opacity="0.85"/>
+  </g>
+  <g>
+    <path d="M170 425 C105 392 105 330 205 322 C315 313 355 405 282 458 C225 500 310 548 455 560 C520 565 555 590 600 630" class="none greenStroke round" stroke-width="8"/>
+    <circle cx="360" cy="540" r="18" class="white" stroke="#22A83A" stroke-width="7"/>
+    <circle cx="480" cy="578" r="23" class="white" stroke="#22A83A" stroke-width="7"/>
+    <path d="M600 630 l-57 -2 32 -42 z" class="green"/>
+  </g>
+  <g filter="url(#softShadow)">
+    <ellipse cx="310" cy="465" rx="170" ry="32" fill="#101820" opacity="0.12"/>
+    <path d="M165 385 L375 350 L495 405 L280 450 Z" fill="#0A111A"/>
+    <path d="M178 368 L378 335 L500 390 L292 427 Z" fill="#1B2733"/>
+    <path d="M150 395 L285 420 L502 382 L502 455 L285 500 L150 470 Z" class="blue"/>
+    <path d="M150 395 L285 420 L502 382 L370 350 Z" fill="#1170F4"/>
+    <path d="M285 420 L502 382 L502 455 L285 500 Z" fill="#0047B8"/>
+    <path d="M150 395 L285 420 L285 500 L150 470 Z" fill="#0062E6"/>
+    <path d="M160 402 L285 425 L490 390" class="none white round" stroke-width="4" opacity="0.9"/>
+    <g>
+      <circle cx="212" cy="468" r="25" class="charcoal"/><circle cx="212" cy="468" r="13" fill="#596573"/>
+      <circle cx="285" cy="482" r="25" class="charcoal"/><circle cx="285" cy="482" r="13" fill="#596573"/>
+      <circle cx="405" cy="458" r="23" class="charcoal"/><circle cx="405" cy="458" r="12" fill="#596573"/>
+    </g>
+    <text x="375" y="453" class="white num" font-size="48" transform="skewX(-8)">1555</text>
+    <g stroke="#101820" stroke-width="5" stroke-linejoin="round">
+      <path d="M205 370 L250 210 L315 395 Z" fill="#F7F9FC"/>
+      <path d="M310 350 L365 195 L440 390 Z" fill="#F7F9FC"/>
+      <path d="M222 350 L252 245 L292 360 Z" fill="#BFC7D1" opacity="0.6"/>
+      <path d="M338 335 L370 240 L414 355 Z" fill="#BFC7D1" opacity="0.6"/>
+      <path d="M240 220 H390" class="none"/>
+      <path d="M255 265 H405" class="none"/>
+      <path d="M270 315 H420" class="none"/>
+    </g>
+    <rect x="235" y="208" width="70" height="18" rx="8" class="blue" stroke="#101820" stroke-width="4"/>
+    <rect x="318" y="196" width="80" height="16" rx="8" fill="#D9DEE7" stroke="#101820" stroke-width="4"/>
+    <rect x="335" y="404" width="90" height="24" rx="12" fill="#0E1720"/>
+  </g>
+  <g transform="translate(605 185)">
+    <text x="0" y="95" class="blue word" font-size="168">FRC</text>
+    <text x="7" y="185" class="charcoal word" font-size="88" letter-spacing="-3">MOTION</text>
+    <text x="7" y="280" class="blue word" font-size="92" letter-spacing="-3">COACH</text>
+    <path d="M10 325 H390 l16 -32 l18 62 l18 -40 l12 10 H560" class="none greenStroke round" stroke-width="6"/>
+    <text x="12" y="382" class="charcoal tag" font-size="29">TRACK</text>
+    <circle cx="147" cy="373" r="4" class="blue"/>
+    <text x="173" y="382" class="charcoal tag" font-size="29">ANALYZE</text>
+    <circle cx="392" cy="373" r="4" class="orange"/>
+    <text x="418" y="382" class="charcoal tag" font-size="29">IMPROVE</text>
+    <circle cx="598" cy="373" r="4" class="green"/>
+  </g>
+</svg>

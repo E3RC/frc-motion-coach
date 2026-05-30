@@ -1,12 +1,6 @@
 # Python
 __pycache__/
 *.py[cod]
-*.egg-info/
-dist/
-build/
-.env
-venv/
-.venv/
 
 # IDE
 .vs/
@@ -21,3 +15,20 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Node
+node_modules/
+frontend/dist/
+
+# Project data
+data/*.db
+data/settings.json
+
+# Backend
+backend/venv/
+backend/.venv/
+*.egg-info/
+
+# Environment
+.env
+.env.local
