@@ -1,3 +1,4 @@
+"""FastAPI server: camera, tracking, calibration endpoints, WebSocket broadcasting."""
 import os
 import sys
 import json
@@ -9,6 +10,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -20,7 +22,7 @@ from .tracking.tracker import Tracker
 from .metrics.calculator import MetricsCalculator, MetricsConfig
 from .settings.app_settings import AppSettings
 
-app = FastAPI(title="FRC Motion Coach", version="0.1.0")
+app = FastAPI(title="FRC Motion Coach", version="1.0.0-beta.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -79,6 +81,36 @@ async def camera_frame():
     if frame is None:
         return {"error": "No frame"}
     _, jpeg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
+    from fastapi.responses import Response
+    return Response(content=jpeg.tobytes(), media_type="image/jpeg")
+
+
+@app.get("/api/calibration/detect-markers")
+async def detect_markers():
+    if not _ensure_camera():
+        return {"success": False, "error": "No camera"}
+    frame = camera_mgr.read()
+    if frame is None:
+        return {"success": False, "error": "No frame"}
+    markers = calibrator.detect_aruco_markers(frame)
+    return {
+        "success": True,
+        "markers": [{"id": mid, "x": float(c[0]), "y": float(c[1])} for mid, c in markers],
+        "count": len(markers),
+    }
+
+
+@app.get("/api/calibration/preview.jpg")
+async def calibration_preview():
+    if not _ensure_camera():
+        return {"error": "No camera"}
+    frame = camera_mgr.read()
+    if frame is None:
+        return {"error": "No frame"}
+    corners, ids, _ = calibrator.detector.detectMarkers(frame)
+    if ids is not None:
+        cv2.aruco.drawDetectedMarkers(frame, corners, ids)
+    _, jpeg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
     from fastapi.responses import Response
     return Response(content=jpeg.tobytes(), media_type="image/jpeg")
 
@@ -202,12 +234,17 @@ async def get_tracking_summary():
     }
 
 
+class CalibrateRequest(BaseModel):
+    image_points: list[list[float]]
+    field_points: list[list[float]]
+
+
 @app.post("/api/tracking/calibrate")
-async def calibrate_from_frame(image_points: list[list[float]], field_points: list[list[float]]):
+async def calibrate_from_frame(req: CalibrateRequest):
     import numpy as np
 
     global current_H
-    result = calibrator.calibrate_from_points(image_points, field_points)
+    result = calibrator.calibrate_from_points(req.image_points, req.field_points)
     if result.success:
         current_H = result.homography_matrix
         return {

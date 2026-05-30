@@ -1,3 +1,4 @@
+"""Motion analytics: speed, acceleration, estimated G-force, moving/stopped classification."""
 import math
 import numpy as np
 from dataclasses import dataclass, field

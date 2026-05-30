@@ -1,3 +1,4 @@
+"""Field calibration: ArUco detection, homography computation, pixel-to-field coordinate transform."""
 import cv2
 import numpy as np
 from enum import Enum

@@ -1,3 +1,4 @@
+"""SQLite storage: calibration profiles, runs, tracking samples, event markers."""
 import json
 import os
 from datetime import datetime, timezone

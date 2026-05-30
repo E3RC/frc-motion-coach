@@ -1,3 +1,4 @@
+"""USB/webcam input module. Wraps OpenCV VideoCapture with thread safety."""
 import cv2
 import threading
 from dataclasses import dataclass

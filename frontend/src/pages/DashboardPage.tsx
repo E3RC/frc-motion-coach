@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { api } from '../api/client';
 import { useWebSocket, LiveTrackingData } from '../hooks/useWebSocket';
 import FieldOverlay from '../field/FieldOverlay';
@@ -13,6 +13,11 @@ export default function DashboardPage() {
   const [path, setPath] = useState<{ x: number; y: number }[]>([]);
   const [currentPos, setCurrentPos] = useState<{ x: number; y: number } | null>(null);
   const [frameTs, setFrameTs] = useState(0);
+  const [liveSpeed, setLiveSpeed] = useState(0);
+  const [liveAccel, setLiveAccel] = useState(0);
+  const [liveG, setLiveG] = useState(0);
+  const [liveConfidence, setLiveConfidence] = useState(0);
+  const [liveState, setLiveState] = useState('');
 
   const { data: liveData, connected } = useWebSocket('/api/ws/live-tracking');
 
@@ -20,9 +25,40 @@ export default function DashboardPage() {
     if (liveData && liveData.confidence > 0) {
       setCurrentPos({ x: liveData.field_x, y: liveData.field_y });
       setPath(prev => [...prev.slice(-500), { x: liveData.field_x, y: liveData.field_y }]);
+      setLiveSpeed(liveData.speed);
+      setLiveAccel(liveData.acceleration);
+      setLiveG(liveData.estimated_g);
+      setLiveConfidence(liveData.confidence);
+      setLiveState(liveData.state);
     }
   }, [liveData]);
 
+  // Poll tracking/frame when active — drives both camera feed and tracking data
+  useEffect(() => {
+    if (!tracking) return;
+    let running = true;
+    async function poll() {
+      while (running) {
+        try {
+          const data = await api.getTrackingFrame();
+          if (data.success) {
+            setCurrentPos({ x: data.field_x, y: data.field_y });
+            setPath(prev => [...prev.slice(-500), { x: data.field_x, y: data.field_y }]);
+            setLiveSpeed(data.speed);
+            setLiveAccel(data.acceleration);
+            setLiveG(data.estimated_g);
+            setLiveConfidence(data.confidence);
+            setLiveState(data.state);
+          }
+        } catch {}
+        await new Promise(r => setTimeout(r, 33));
+      }
+    }
+    poll();
+    return () => { running = false; };
+  }, [tracking]);
+
+  // Refresh camera feed img tag independently
   useEffect(() => {
     if (!tracking) return;
     const id = setInterval(() => setFrameTs(t => t + 1), 50);
@@ -35,6 +71,7 @@ export default function DashboardPage() {
     setPath([]);
     setCurrentPos(null);
     setSummary(null);
+    setLiveSpeed(0); setLiveAccel(0); setLiveG(0); setLiveConfidence(0);
   };
 
   const handleStopTracking = async () => {
@@ -173,14 +210,14 @@ export default function DashboardPage() {
           <div style={cardStyle}>
             <h3 style={h3Style}>Live Metrics</h3>
             <div style={statsGridStyle}>
-              <StatBox label="Speed" value={liveData?.speed.toFixed(2) ?? '-'} unit="ft/s" />
+              <StatBox label="Speed" value={tracking ? liveSpeed.toFixed(2) : '-'} unit="ft/s" />
               <StatBox label="Max Speed" value={summary?.max_speed_ft_per_s?.toFixed(2) ?? '-'} unit="ft/s" color="var(--fmc-blue)" />
-              <StatBox label="Accel" value={liveData?.acceleration.toFixed(2) ?? '-'} unit="ft/s²" />
-              <StatBox label="Est. G-Force" value={liveData?.estimated_g.toFixed(3) ?? '-'} unit="g" color="var(--fmc-alert-orange)" />
+              <StatBox label="Accel" value={tracking ? liveAccel.toFixed(2) : '-'} unit="ft/s²" />
+              <StatBox label="Est. G-Force" value={tracking ? liveG.toFixed(3) : '-'} unit="g" color="var(--fmc-alert-orange)" />
               <StatBox label="Distance" value={summary?.total_distance_ft?.toFixed(1) ?? '-'} unit="ft" />
               <StatBox label="Moving" value={summary?.time_moving_s?.toFixed(1) ?? '-'} unit="s" color="var(--fmc-motion-green)" />
               <StatBox label="Stopped" value={summary?.time_stopped_s?.toFixed(1) ?? '-'} unit="s" color="var(--fmc-danger)" />
-              <StatBox label="Confidence" value={liveData ? `${(liveData.confidence * 100).toFixed(0)}%` : '-'} unit="" />
+              <StatBox label="Confidence" value={tracking ? `${(liveConfidence * 100).toFixed(0)}%` : '-'} unit="" />
             </div>
           </div>
         </div>

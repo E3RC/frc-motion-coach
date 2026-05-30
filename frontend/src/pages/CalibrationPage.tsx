@@ -14,11 +14,25 @@ export default function CalibrationPage() {
   const [savedCals, setSavedCals] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [markers, setMarkers] = useState<{ id: number; x: number; y: number }[]>([]);
+  const [previewTs, setPreviewTs] = useState(0);
+  const [previewActive, setPreviewActive] = useState(false);
+  const [imagePoints, setImagePoints] = useState<number[][]>([]);
+  const [homography, setHomography] = useState<number[][] | null>(null);
+  const [reprojError, setReprojError] = useState(0);
+  const [calOk, setCalOk] = useState(false);
 
   useEffect(() => {
     api.listCameras().then(setCameras).catch(() => {});
     api.getCalibrations().then(setSavedCals).catch(() => {});
   }, []);
+
+  // Refresh preview when active
+  useEffect(() => {
+    if (!previewActive) return;
+    const id = setInterval(() => setPreviewTs(t => t + 1), 100);
+    return () => clearInterval(id);
+  }, [previewActive]);
 
   const handleFieldTypeChange = (t: FieldType) => {
     setFieldType(t);
@@ -26,13 +40,67 @@ export default function CalibrationPage() {
     else if (t === 'half_field') { setFieldWidth(27); setFieldLength(27); }
   };
 
+  const startPreview = async () => {
+    try {
+      await api.startTracking();
+      setPreviewActive(true);
+    } catch {}
+  };
+
+  const stopPreview = () => {
+    api.stopTracking();
+    setPreviewActive(false);
+  };
+
+  const detectMarkers = async () => {
+    try {
+      const res = await fetch('/api/calibration/detect-markers');
+      const data = await res.json();
+      if (data.success && data.markers.length >= 4) {
+        setMarkers(data.markers);
+        const pts = data.markers.map((m: any) => [m.x, m.y]);
+        setImagePoints(pts);
+        // Map detected markers to field corners (assume order: TL, TR, BR, BL)
+        const fieldPts = [
+          [0, 0],
+          [fieldWidth, 0],
+          [fieldWidth, fieldLength],
+          [0, fieldLength],
+        ];
+        const calRes = await fetch('/api/tracking/calibrate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_points: pts, field_points: fieldPts }),
+        });
+        const calData = await calRes.json();
+        if (calData.success) {
+          setHomography(calData.homography);
+          setReprojError(calData.reprojection_error);
+          setCalOk(true);
+          setMessage(`Calibration successful! Reprojection error: ${calData.reprojection_error.toFixed(3)} ft`);
+        } else {
+          setCalOk(false);
+          setMessage(`Calibration failed: ${calData.error}`);
+        }
+      } else if (data.success) {
+        setMarkers(data.markers);
+        setMessage(`Only ${data.count} markers found. Need at least 4.`);
+      } else {
+        setMessage(data.error || 'Detection failed');
+      }
+    } catch (err: any) {
+      setMessage(`Error: ${err.message}`);
+    }
+  };
+
   const handleSaveCalibration = async () => {
     setSaving(true);
     setMessage('');
     try {
-      const imagePoints = [[100, 100], [300, 100], [300, 300], [100, 300]];
-      const fieldPoints = [[0, 0], [fieldWidth, 0], [fieldWidth, fieldLength], [0, fieldLength]];
-      const homography = [[1, 0, -100], [0, 1, -100], [0, 0, 1]];
+      const defaultPts = [[100, 100], [300, 100], [300, 300], [100, 300]];
+      const h = homography || [[1, 0, -100], [0, 1, -100], [0, 0, 1]];
+      const imgPts = imagePoints.length === 4 ? imagePoints : defaultPts;
+      const fieldPts = [[0, 0], [fieldWidth, 0], [fieldWidth, fieldLength], [0, fieldLength]];
 
       const res = await api.saveCalibration({
         name: calName,
@@ -41,9 +109,9 @@ export default function CalibrationPage() {
         field_length: fieldLength,
         unit: 'feet',
         camera_resolution: `${selectedCamera}`,
-        marker_points_image: imagePoints,
-        marker_points_field: fieldPoints,
-        homography_matrix: homography,
+        marker_points_image: imgPts,
+        marker_points_field: fieldPts,
+        homography_matrix: h,
         notes: '',
       });
       setMessage(`Calibration saved with ID ${res.calibration_id}`);
@@ -152,43 +220,109 @@ export default function CalibrationPage() {
 
         {step === 3 && (
           <div>
-            <h3 style={h3Style}>Calibration</h3>
-            <div style={{
-              background: 'var(--fmc-bg)', borderRadius: 8, padding: 24,
-              textAlign: 'center', color: 'var(--fmc-text-muted)', marginBottom: 12,
-              border: '1px dashed var(--fmc-border)',
-            }}>
-              <div style={{ fontSize: 40, marginBottom: 8, opacity: 0.5 }}>🎯</div>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>Place ArUco markers at field corners</div>
-              <div style={{ fontSize: 12 }}>
-                Or use manual corner selection in the camera feed
+            <h3 style={h3Style}>Calibrate</h3>
+            {!previewActive ? (
+              <button onClick={startPreview} style={btnPrimary}>
+                Start Camera Preview
+              </button>
+            ) : (
+              <button onClick={stopPreview} style={btnDanger}>
+                Stop Camera
+              </button>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+              <div style={{
+                background: 'var(--fmc-bg)', borderRadius: 8, padding: 8,
+                border: '1px solid var(--fmc-border)',
+              }}>
+                <div style={{ fontSize: 11, color: 'var(--fmc-text-muted)', marginBottom: 4 }}>
+                  Camera Feed (detected markers in color)
+                </div>
+                {previewActive ? (
+                  <img
+                    src={`/api/calibration/preview.jpg?t=${previewTs}`}
+                    alt="Calibration preview"
+                    style={{ width: '100%', height: 240, objectFit: 'contain', borderRadius: 4, background: '#000' }}
+                  />
+                ) : (
+                  <div style={{
+                    width: '100%', height: 240, background: '#0D1A14', borderRadius: 4,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'var(--fmc-text-muted)', fontSize: 12,
+                  }}>
+                    Start preview to see camera feed
+                  </div>
+                )}
+              </div>
+
+              <div style={{
+                background: 'var(--fmc-bg)', borderRadius: 8, padding: 8,
+                border: '1px solid var(--fmc-border)',
+              }}>
+                <div style={{ fontSize: 11, color: 'var(--fmc-text-muted)', marginBottom: 4 }}>
+                  Top-Down Field Preview
+                </div>
+                {calOk ? (
+                  <div style={{
+                    width: '100%', height: 240, background: '#0D1A14', borderRadius: 4,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    justifyContent: 'center', color: 'var(--fmc-motion-green)', fontSize: 13, gap: 4,
+                  }}>
+                    <div style={{ fontSize: 24 }}>✅</div>
+                    <div>Calibration OK</div>
+                    <div style={{ fontSize: 11, color: 'var(--fmc-text-muted)' }}>
+                      Error: {reprojError.toFixed(3)} ft
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{
+                    width: '100%', height: 240, background: '#0D1A14', borderRadius: 4,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'var(--fmc-text-muted)', fontSize: 12,
+                  }}>
+                    Run detection to see field preview
+                  </div>
+                )}
               </div>
             </div>
-            <div style={{
-              background: 'var(--fmc-bg)', borderRadius: 8, padding: 16,
-              border: '1px solid var(--fmc-border)', marginBottom: 12
-            }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fmc-text)', marginBottom: 8 }}>
-                Calibration Preview
-              </div>
-              <div style={{
-                width: '100%', height: 200, background: '#0D1A14',
-                borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--fmc-text-muted)', fontSize: 12
-              }}>
-                Top-down field preview will appear here
-              </div>
-              <div style={{
-                display: 'flex', gap: 16, marginTop: 12, fontSize: 12, color: 'var(--fmc-text-muted)'
-              }}>
-                <div>Width: {fieldWidth} ft</div>
-                <div>Length: {fieldLength} ft</div>
-                <div>Reprojection error: —</div>
-              </div>
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+              <button onClick={detectMarkers} style={btnPrimary}>
+                Detect Markers & Calibrate
+              </button>
+              {calOk && (
+                <button onClick={() => setStep(4)} style={btnSuccess}>
+                  Next: Save
+                </button>
+              )}
             </div>
-            <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
+
+            {markers.length > 0 && (
+              <div style={{ marginTop: 8, fontSize: 12, color: 'var(--fmc-text-muted)' }}>
+                Detected {markers.length} marker(s):
+                {markers.map(m => ` ID ${m.id}`).join(', ')}
+              </div>
+            )}
+
+            {message && (
+              <div style={{
+                marginTop: 8, padding: '8px 12px', borderRadius: 6, fontSize: 12,
+                background: message.includes('successful') ? '#0A2A10' : message.includes('failed') || message.includes('Error') ? '#2A0A0A' : '#1A1A0A',
+                color: message.includes('successful') ? '#22A83A' : message.includes('failed') || message.includes('Error') ? '#FF6B6B' : '#FFC107',
+              }}>
+                {message}
+              </div>
+            )}
+
+            <div style={{ marginTop: 12, display: 'flex', gap: 16, fontSize: 12, color: 'var(--fmc-text-muted)' }}>
+              <div>Width: {fieldWidth} ft</div>
+              <div>Length: {fieldLength} ft</div>
+              <div>Reprojection error: {calOk ? `${reprojError.toFixed(3)} ft` : '—'}</div>
+            </div>
+
+            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
               <button onClick={() => setStep(2)} style={btnSecondary}>Back</button>
-              <button onClick={() => setStep(4)} style={btnPrimary}>Next</button>
             </div>
           </div>
         )}
@@ -281,6 +415,18 @@ const btnPrimary: React.CSSProperties = {
 const btnSecondary: React.CSSProperties = {
   padding: '8px 20px', background: 'var(--fmc-border)', color: 'var(--fmc-text)',
   border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 13,
+  fontFamily: 'var(--fmc-font-ui)',
+};
+
+const btnDanger: React.CSSProperties = {
+  padding: '8px 20px', background: 'var(--fmc-danger)', color: 'white',
+  border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 700, fontSize: 13,
+  fontFamily: 'var(--fmc-font-ui)',
+};
+
+const btnSuccess: React.CSSProperties = {
+  padding: '8px 20px', background: 'var(--fmc-motion-green)', color: 'white',
+  border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 700, fontSize: 13,
   fontFamily: 'var(--fmc-font-ui)',
 };
 

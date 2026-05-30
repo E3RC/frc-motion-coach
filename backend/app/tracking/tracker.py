@@ -1,3 +1,4 @@
+"""Robot tracking: ArUco marker detection, color-based tracking, pixel coordinate output."""
 import cv2
 import numpy as np
 from enum import Enum
