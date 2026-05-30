@@ -3,13 +3,15 @@ import DashboardPage from './pages/DashboardPage';
 import CalibrationPage from './pages/CalibrationPage';
 import HistoryPage from './pages/HistoryPage';
 import RunReviewPage from './pages/RunReviewPage';
+import SplashScreen from './components/SplashScreen';
 
 export default function App() {
   const location = useLocation();
-  const isHome = location.pathname === '/';
 
   return (
-    <div style={{
+    <>
+      <SplashScreen />
+      <div style={{
       minHeight: '100vh',
       background: 'var(--fmc-bg)',
       color: 'var(--fmc-text)',
@@ -50,6 +52,7 @@ export default function App() {
         </Routes>
       </main>
     </div>
+    </>
   );
 }
 
