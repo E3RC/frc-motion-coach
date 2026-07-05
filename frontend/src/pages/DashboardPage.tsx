@@ -33,31 +33,6 @@ export default function DashboardPage() {
     }
   }, [liveData]);
 
-  // Poll tracking/frame when active — drives both camera feed and tracking data
-  useEffect(() => {
-    if (!tracking) return;
-    let running = true;
-    async function poll() {
-      while (running) {
-        try {
-          const data = await api.getTrackingFrame();
-          if (data.success) {
-            setCurrentPos({ x: data.field_x, y: data.field_y });
-            setPath(prev => [...prev.slice(-500), { x: data.field_x, y: data.field_y }]);
-            setLiveSpeed(data.speed);
-            setLiveAccel(data.acceleration);
-            setLiveG(data.estimated_g);
-            setLiveConfidence(data.confidence);
-            setLiveState(data.state);
-          }
-        } catch {}
-        await new Promise(r => setTimeout(r, 33));
-      }
-    }
-    poll();
-    return () => { running = false; };
-  }, [tracking]);
-
   // Refresh camera feed img tag independently
   useEffect(() => {
     if (!tracking) return;

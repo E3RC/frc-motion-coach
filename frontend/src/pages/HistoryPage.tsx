@@ -8,12 +8,14 @@ export default function HistoryPage() {
   const [selected, setSelected] = useState<number[]>([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
+  const loadRuns = () => {
     api.getRuns().then(r => {
       setRuns(r);
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(loadRuns, []);
 
   const exportCSV = async (id: number) => {
     window.open(`/api/runs/${id}/export.csv`, '_blank');
@@ -21,6 +23,30 @@ export default function HistoryPage() {
 
   const exportJSON = async (id: number) => {
     window.open(`/api/runs/${id}/export.json`, '_blank');
+  };
+
+  const handleDelete = async (id: number, name: string) => {
+    if (!confirm(`Delete "${name || `Run #${id}`}"? This cannot be undone.`)) return;
+    try {
+      await api.deleteRun(id);
+      setRuns(prev => prev.filter(r => r.id !== id));
+      setSelected(prev => prev.filter(s => s !== id));
+    } catch (err) {
+      alert('Failed to delete run.');
+    }
+  };
+
+  const toggleSelect = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelected(prev =>
+      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+    );
+  };
+
+  const handleCompare = () => {
+    if (selected.length >= 2) {
+      navigate(`/compare?ids=${selected.join(',')}`);
+    }
   };
 
   if (loading) {
@@ -72,14 +98,23 @@ export default function HistoryPage() {
                 display: 'flex', justifyContent: 'space-between',
                 alignItems: 'flex-start', marginBottom: 10
               }}>
-                <div>
-                  <div style={{ fontWeight: 700, color: 'var(--fmc-text)', fontSize: 14 }}>
-                    {run.name || `Run #${run.id}`}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--fmc-text-muted)' }}>
-                    {new Date(run.created_at).toLocaleString()}
-                    {run.driver ? ` — Driver: ${run.driver}` : ''}
-                    {run.practice_type ? ` — ${run.practice_type}` : ''}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(run.id)}
+                    onChange={() => {}}
+                    onClick={(e) => toggleSelect(run.id, e)}
+                    style={{ cursor: 'pointer', accentColor: 'var(--fmc-blue)' }}
+                  />
+                  <div>
+                    <div style={{ fontWeight: 700, color: 'var(--fmc-text)', fontSize: 14 }}>
+                      {run.name || `Run #${run.id}`}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--fmc-text-muted)' }}>
+                      {new Date(run.created_at).toLocaleString()}
+                      {run.driver ? ` — Driver: ${run.driver}` : ''}
+                      {run.practice_type ? ` — ${run.practice_type}` : ''}
+                    </div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
@@ -94,6 +129,12 @@ export default function HistoryPage() {
                     style={smallBtnStyle}
                   >
                     JSON
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(run.id, run.name); }}
+                    style={{ ...smallBtnStyle, background: 'var(--fmc-danger)', color: 'white' }}
+                  >
+                    Delete
                   </button>
                 </div>
               </div>
@@ -138,12 +179,12 @@ export default function HistoryPage() {
 
       {selected.length >= 2 && (
         <div style={{ marginTop: 16, textAlign: 'center' }}>
-          <button style={{
+          <button onClick={handleCompare} style={{
             padding: '8px 24px', background: 'var(--fmc-blue)', color: 'white',
             border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 700,
             fontFamily: 'var(--fmc-font-ui)',
           }}>
-            Compare {selected.length} Runs (coming soon)
+            Compare {selected.length} Runs
           </button>
         </div>
       )}

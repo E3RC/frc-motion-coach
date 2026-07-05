@@ -48,10 +48,24 @@ class EventCreateRequest(BaseModel):
 
 class SettingsUpdateRequest(BaseModel):
     camera_id: Optional[int] = None
+    camera_resolution_width: Optional[int] = None
+    camera_resolution_height: Optional[int] = None
     tracking_mode: Optional[str] = None
     target_marker_id: Optional[int] = None
+    marker_offset_x: Optional[float] = None
+    marker_offset_y: Optional[float] = None
     moving_threshold_ft_per_s: Optional[float] = None
+    moving_min_duration_s: Optional[float] = None
     stopped_threshold_ft_per_s: Optional[float] = None
+    stopped_min_duration_s: Optional[float] = None
+    tracking_lost_timeout_s: Optional[float] = None
+    smoothing_window: Optional[int] = None
+    color_lower_h: Optional[int] = None
+    color_lower_s: Optional[int] = None
+    color_lower_v: Optional[int] = None
+    color_upper_h: Optional[int] = None
+    color_upper_s: Optional[int] = None
+    color_upper_v: Optional[int] = None
 
 
 def get_db():
@@ -338,6 +352,16 @@ def create_event(run_id: int, req: EventCreateRequest):
     return {"status": "ok", "event_id": event_id}
 
 
+@router.delete("/runs/{run_id}")
+def delete_run(run_id: int):
+    db = get_db()
+    run = db.get_run(run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+    db.delete_run(run_id)
+    return {"status": "ok", "run_id": run_id}
+
+
 @router.get("/runs/{run_id}/events")
 def list_events(run_id: int):
     db = get_db()
@@ -363,14 +387,24 @@ def get_settings():
     settings = AppSettings.load(str(settings_path))
     return {
         "camera_id": settings.camera_id,
+        "camera_resolution_width": settings.camera_resolution_width,
+        "camera_resolution_height": settings.camera_resolution_height,
         "tracking_mode": settings.tracking_mode,
         "target_marker_id": settings.target_marker_id,
+        "marker_offset_x": settings.marker_offset_x,
+        "marker_offset_y": settings.marker_offset_y,
         "moving_threshold_ft_per_s": settings.moving_threshold_ft_per_s,
         "moving_min_duration_s": settings.moving_min_duration_s,
         "stopped_threshold_ft_per_s": settings.stopped_threshold_ft_per_s,
         "stopped_min_duration_s": settings.stopped_min_duration_s,
         "tracking_lost_timeout_s": settings.tracking_lost_timeout_s,
         "smoothing_window": settings.smoothing_window,
+        "color_lower_h": settings.color_lower_h,
+        "color_lower_s": settings.color_lower_s,
+        "color_lower_v": settings.color_lower_v,
+        "color_upper_h": settings.color_upper_h,
+        "color_upper_s": settings.color_upper_s,
+        "color_upper_v": settings.color_upper_v,
     }
 
 

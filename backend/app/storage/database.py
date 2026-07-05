@@ -145,6 +145,13 @@ class Database:
                 run_id=run_id
             ).order_by(TrackingSampleModel.frame_number).all()
 
+    def delete_run(self, run_id: int):
+        with self.get_session() as session:
+            session.query(TrackingSampleModel).filter_by(run_id=run_id).delete()
+            session.query(EventMarkerModel).filter_by(run_id=run_id).delete()
+            session.query(RunModel).filter_by(id=run_id).delete()
+            session.commit()
+
     def save_event(self, data: dict) -> int:
         with self.get_session() as session:
             model = EventMarkerModel(**data)

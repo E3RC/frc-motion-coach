@@ -3,6 +3,8 @@ import DashboardPage from './pages/DashboardPage';
 import CalibrationPage from './pages/CalibrationPage';
 import HistoryPage from './pages/HistoryPage';
 import RunReviewPage from './pages/RunReviewPage';
+import SettingsPage from './pages/SettingsPage';
+import CompareRunsPage from './pages/CompareRunsPage';
 import SplashScreen from './components/SplashScreen';
 
 export default function App() {
@@ -42,6 +44,9 @@ export default function App() {
         <NavLink to="/history" style={linkStyle}>
           RUNS
         </NavLink>
+        <NavLink to="/settings" style={linkStyle}>
+          SETTINGS
+        </NavLink>
       </nav>
       <main style={{ padding: 24 }}>
         <Routes>
@@ -49,6 +54,8 @@ export default function App() {
           <Route path="/calibration" element={<CalibrationPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/runs/:id" element={<RunReviewPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/compare" element={<CompareRunsPage />} />
         </Routes>
       </main>
     </div>

@@ -92,6 +92,10 @@ export const api = {
     }),
 
   getRuns: () => request<RunSummary[]>('/runs'),
+  deleteRun: (id: number) =>
+    request<{ status: string; run_id: number }>(`/runs/${id}`, {
+      method: 'DELETE',
+    }),
   getRun: (id: number) => request<RunDetail>(`/runs/${id}`),
   getSamples: (id: number) => request<TrackingSample[]>(`/runs/${id}/samples`),
   getRunSummary: (id: number) => request<Record<string, number>>(`/runs/${id}/summary`),
