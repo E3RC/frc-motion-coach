@@ -5,6 +5,7 @@ import HistoryPage from './pages/HistoryPage';
 import RunReviewPage from './pages/RunReviewPage';
 import SettingsPage from './pages/SettingsPage';
 import CompareRunsPage from './pages/CompareRunsPage';
+import HeatmapPage from './pages/HeatmapPage';
 import SplashScreen from './components/SplashScreen';
 
 export default function App() {
@@ -44,6 +45,9 @@ export default function App() {
         <NavLink to="/history" style={linkStyle}>
           RUNS
         </NavLink>
+        <NavLink to="/heatmap" style={linkStyle}>
+          HEATMAP
+        </NavLink>
         <NavLink to="/settings" style={linkStyle}>
           SETTINGS
         </NavLink>
@@ -56,6 +60,7 @@ export default function App() {
           <Route path="/runs/:id" element={<RunReviewPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/compare" element={<CompareRunsPage />} />
+          <Route path="/heatmap" element={<HeatmapPage />} />
         </Routes>
       </main>
     </div>

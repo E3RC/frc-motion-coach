@@ -119,4 +119,34 @@ export const api = {
     }),
   resetTracking: () =>
     request<{ status: string }>('/tracking/reset', { method: 'POST' }),
+
+  // Multi-robot
+  getRobots: () => request<{ robots: any[] }>('/tracking/robots'),
+  getRobotSummaries: () => request<{ summaries: any[] }>('/tracking/robot-summaries'),
+  setTargetMarkers: (markerIds: number[]) =>
+    request<{ status: string }>('/tracking/set-target-markers', {
+      method: 'POST',
+      body: JSON.stringify({ marker_ids: markerIds }),
+    }),
+
+  // Video recording
+  startRecording: () => request<{ status: string; path: string }>('/recording/start', { method: 'POST' }),
+  stopRecording: () => request<{ status: string; path: string }>('/recording/stop', { method: 'POST' }),
+
+  // Camera calibration (lens distortion)
+  detectChessboard: () => request<{ success: boolean; count: number }>('/camera-calibration/detect-chessboard', { method: 'POST' }),
+  runCameraCalibration: () => request<{ success: boolean; reprojection_error?: number; error?: string }>('/camera-calibration/calibrate', { method: 'POST' }),
+  getCameraCalibrationStatus: () => request<{ calibrated: boolean; calibration: any }>('/camera-calibration/status'),
+
+  // Heatmap
+  getHeatmap: (runIds?: string) => request<any>(`/heatmap${runIds ? `?run_ids=${runIds}` : ''}`),
+
+  // NetworkTables
+  getNTStatus: () => request<any>('/networktables/status'),
+  connectNT: (server: string) =>
+    request<{ status: string }>('/networktables/connect', {
+      method: 'POST',
+      body: JSON.stringify({ server }),
+    }),
+  disconnectNT: () => request<{ status: string }>('/networktables/disconnect', { method: 'POST' }),
 };

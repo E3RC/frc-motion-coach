@@ -90,11 +90,20 @@ export default function SettingsPage() {
             <select value={form.tracking_mode} onChange={e => set('tracking_mode', e.target.value)} style={selectStyle}>
               <option value="aruco">ArUco Marker</option>
               <option value="color">Color Tracking</option>
+              <option value="yolo">YOLO (ML Detection)</option>
             </select>
+          </Row>
+          <Row>
+            <Label>Target Marker IDs (comma-separated)</Label>
+            <input type="text" value={form.target_marker_ids || '0'} onChange={e => set('target_marker_ids', e.target.value)} style={inputStyle} />
           </Row>
           <Row>
             <Label>Target Marker ID</Label>
             <input type="number" value={form.target_marker_id} onChange={e => set('target_marker_id', Number(e.target.value))} style={inputStyle} />
+          </Row>
+          <Row>
+            <Label>YOLO Model Path</Label>
+            <input type="text" value={form.yolo_model_path || 'yolov8n.pt'} onChange={e => set('yolo_model_path', e.target.value)} style={inputStyle} />
           </Row>
           <Row>
             <Label>Marker Offset X (ft)</Label>
@@ -130,6 +139,21 @@ export default function SettingsPage() {
           <Row>
             <Label>Smoothing Window</Label>
             <input type="number" value={form.smoothing_window} onChange={e => set('smoothing_window', Number(e.target.value))} style={inputStyle} />
+          </Row>
+        </Section>
+
+        <Section title="NetworkTables (Robot Telemetry)">
+          <Row>
+            <Label>Enabled</Label>
+            <input type="checkbox" checked={!!form.networktables_enabled} onChange={e => set('networktables_enabled', e.target.checked)} style={{ cursor: 'pointer', accentColor: 'var(--fmc-blue)' }} />
+          </Row>
+          <Row>
+            <Label>Server Address</Label>
+            <input type="text" value={form.networktables_server || '10.15.55.2'} onChange={e => set('networktables_server', e.target.value)} style={inputStyle} />
+          </Row>
+          <Row>
+            <Label>Port</Label>
+            <input type="number" value={form.networktables_port || 5810} onChange={e => set('networktables_port', Number(e.target.value))} style={inputStyle} />
           </Row>
         </Section>
 

@@ -15,7 +15,7 @@ export default function SplashScreen() {
   const fadeStyle = fading ? { opacity: 0, transition: 'opacity 0.5s ease-out' } : {};
 
   return (
-    <div style={{
+    <div data-testid="splash" style={{
       position: 'fixed', inset: 0, zIndex: 9999,
       background: '#101820',
       display: 'flex', flexDirection: 'column',

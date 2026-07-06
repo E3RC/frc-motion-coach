@@ -145,6 +145,9 @@ class Database:
                 run_id=run_id
             ).order_by(TrackingSampleModel.frame_number).all()
 
+    def close(self):
+        self.engine.dispose()
+
     def delete_run(self, run_id: int):
         with self.get_session() as session:
             session.query(TrackingSampleModel).filter_by(run_id=run_id).delete()

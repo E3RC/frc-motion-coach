@@ -26,6 +26,13 @@ class AppSettings:
     color_upper_s: int = 255
     color_upper_v: int = 255
 
+    networktables_server: str = "10.15.55.2"
+    networktables_port: int = 5810
+    networktables_enabled: bool = False
+
+    yolo_model_path: str = "yolov8n.pt"
+    target_marker_ids: str = "0"
+
     _file_path: str = ""
 
     def save(self):

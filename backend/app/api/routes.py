@@ -66,6 +66,11 @@ class SettingsUpdateRequest(BaseModel):
     color_upper_h: Optional[int] = None
     color_upper_s: Optional[int] = None
     color_upper_v: Optional[int] = None
+    networktables_server: Optional[str] = None
+    networktables_port: Optional[int] = None
+    networktables_enabled: Optional[bool] = None
+    yolo_model_path: Optional[str] = None
+    target_marker_ids: Optional[str] = None
 
 
 def get_db():
@@ -405,6 +410,11 @@ def get_settings():
         "color_upper_h": settings.color_upper_h,
         "color_upper_s": settings.color_upper_s,
         "color_upper_v": settings.color_upper_v,
+        "networktables_server": settings.networktables_server,
+        "networktables_port": settings.networktables_port,
+        "networktables_enabled": settings.networktables_enabled,
+        "yolo_model_path": settings.yolo_model_path,
+        "target_marker_ids": settings.target_marker_ids,
     }
 
 

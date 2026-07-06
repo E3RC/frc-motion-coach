@@ -9,6 +9,7 @@ from typing import Optional
 class TrackingMode(str, Enum):
     ARUCO = "aruco"
     COLOR = "color"
+    YOLO = "yolo"
 
 
 class RobotState(str, Enum):
