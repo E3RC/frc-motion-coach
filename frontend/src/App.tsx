@@ -6,6 +6,7 @@ import RunReviewPage from './pages/RunReviewPage';
 import SettingsPage from './pages/SettingsPage';
 import CompareRunsPage from './pages/CompareRunsPage';
 import HeatmapPage from './pages/HeatmapPage';
+import SessionsPage from './pages/SessionsPage';
 import SplashScreen from './components/SplashScreen';
 
 export default function App() {
@@ -48,6 +49,9 @@ export default function App() {
         <NavLink to="/heatmap" style={linkStyle}>
           HEATMAP
         </NavLink>
+        <NavLink to="/sessions" style={linkStyle}>
+          SESSIONS
+        </NavLink>
         <NavLink to="/settings" style={linkStyle}>
           SETTINGS
         </NavLink>
@@ -61,6 +65,7 @@ export default function App() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/compare" element={<CompareRunsPage />} />
           <Route path="/heatmap" element={<HeatmapPage />} />
+          <Route path="/sessions" element={<SessionsPage />} />
         </Routes>
       </main>
     </div>

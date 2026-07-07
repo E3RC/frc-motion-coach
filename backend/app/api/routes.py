@@ -27,12 +27,33 @@ class CalibrationSaveRequest(BaseModel):
     notes: str = ""
 
 
+class SessionCreateRequest(BaseModel):
+    name: str
+    practice_type: str = ""
+    driver: str = ""
+    robot_config: str = ""
+    team: str = ""
+    notes: str = ""
+    session_date: str = ""
+
+
+class SessionUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    practice_type: Optional[str] = None
+    driver: Optional[str] = None
+    robot_config: Optional[str] = None
+    team: Optional[str] = None
+    notes: Optional[str] = None
+    session_date: Optional[str] = None
+
+
 class RunStartRequest(BaseModel):
     name: str = ""
     driver: str = ""
     robot_config: str = ""
     practice_type: str = ""
     calibration_profile_id: Optional[int] = None
+    session_id: Optional[int] = None
     notes: str = ""
 
 
@@ -163,6 +184,98 @@ def get_calibration(cal_id: int):
     }
 
 
+# --- Session Endpoints ---
+
+@router.post("/sessions")
+def create_session(req: SessionCreateRequest):
+    db = get_db()
+    sess_id = db.save_session({
+        "name": req.name,
+        "practice_type": req.practice_type,
+        "driver": req.driver,
+        "robot_config": req.robot_config,
+        "team": req.team,
+        "notes": req.notes,
+        "session_date": req.session_date,
+    })
+    return {"status": "ok", "session_id": sess_id}
+
+
+@router.get("/sessions")
+def list_sessions():
+    db = get_db()
+    sessions = db.get_sessions()
+    result = []
+    for s in sessions:
+        runs = db.get_runs_by_session(s.id)
+        result.append({
+            "id": s.id,
+            "name": s.name,
+            "practice_type": s.practice_type,
+            "driver": s.driver,
+            "robot_config": s.robot_config,
+            "team": s.team,
+            "notes": s.notes,
+            "session_date": s.session_date,
+            "created_at": s.created_at.isoformat() if s.created_at else "",
+            "run_count": len(runs),
+        })
+    return result
+
+
+@router.get("/sessions/{sess_id}")
+def get_session_detail(sess_id: int):
+    db = get_db()
+    s = db.get_session_by_id(sess_id)
+    if not s:
+        raise HTTPException(status_code=404, detail="Session not found")
+    runs = db.get_runs_by_session(sess_id)
+    return {
+        "id": s.id,
+        "name": s.name,
+        "practice_type": s.practice_type,
+        "driver": s.driver,
+        "robot_config": s.robot_config,
+        "team": s.team,
+        "notes": s.notes,
+        "session_date": s.session_date,
+        "created_at": s.created_at.isoformat() if s.created_at else "",
+        "runs": [
+            {
+                "id": r.id,
+                "name": r.name,
+                "driver": r.driver,
+                "created_at": r.created_at.isoformat() if r.created_at else "",
+            }
+            for r in runs
+        ],
+    }
+
+
+@router.patch("/sessions/{sess_id}")
+def update_session(sess_id: int, req: SessionUpdateRequest):
+    db = get_db()
+    s = db.get_session_by_id(sess_id)
+    if not s:
+        raise HTTPException(status_code=404, detail="Session not found")
+    data = req.model_dump(exclude_none=True)
+    if data:
+        db.update_session(sess_id, data)
+    return {"status": "ok"}
+
+
+@router.delete("/sessions/{sess_id}")
+def delete_session(sess_id: int):
+    db = get_db()
+    s = db.get_session_by_id(sess_id)
+    if not s:
+        raise HTTPException(status_code=404, detail="Session not found")
+    db.delete_session(sess_id)
+    return {"status": "ok", "session_id": sess_id}
+
+
+# --- Run Endpoints ---
+
 active_run_id: Optional[int] = None
 
 
@@ -176,6 +289,7 @@ def start_run(req: RunStartRequest):
         "robot_config": req.robot_config,
         "practice_type": req.practice_type,
         "calibration_profile_id": req.calibration_profile_id,
+        "session_id": req.session_id,
         "notes": req.notes,
     })
     active_run_id = run_id
@@ -211,6 +325,7 @@ def list_runs():
             "driver": r.driver,
             "robot_config": r.robot_config,
             "practice_type": r.practice_type,
+            "session_id": r.session_id,
             "created_at": r.created_at.isoformat() if r.created_at else "",
             "duration_s": metrics.get("duration_s", 0),
             "max_speed_ft_per_s": metrics.get("max_speed_ft_per_s", 0),
@@ -241,6 +356,7 @@ def get_run(run_id: int):
         "driver": run.driver,
         "robot_config": run.robot_config,
         "practice_type": run.practice_type,
+        "session_id": run.session_id,
         "created_at": run.created_at.isoformat() if run.created_at else "",
         "notes": run.notes,
         "summary_metrics": metrics,

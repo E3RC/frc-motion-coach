@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { api } from '../api/client';
-import { useWebSocket, LiveTrackingData } from '../hooks/useWebSocket';
+import { api, SessionSummary } from '../api/client';
+import { useWebSocket } from '../hooks/useWebSocket';
 import FieldOverlay from '../field/FieldOverlay';
 
 export default function DashboardPage() {
@@ -10,6 +10,8 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<any>(null);
   const [practiceType, setPracticeType] = useState('Driver Practice');
   const [driverName, setDriverName] = useState('');
+  const [sessionId, setSessionId] = useState<number | 0>(0);
+  const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [path, setPath] = useState<{ x: number; y: number }[]>([]);
   const [currentPos, setCurrentPos] = useState<{ x: number; y: number } | null>(null);
   const [frameTs, setFrameTs] = useState(0);
@@ -19,7 +21,13 @@ export default function DashboardPage() {
   const [liveConfidence, setLiveConfidence] = useState(0);
   const [liveState, setLiveState] = useState('');
 
+  const [ntData, setNtData] = useState<any>(null);
+
   const { data: liveData, connected } = useWebSocket('/api/ws/live-tracking');
+
+  useEffect(() => {
+    api.getSessions().then(setSessions).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (liveData && liveData.confidence > 0) {
@@ -33,11 +41,26 @@ export default function DashboardPage() {
     }
   }, [liveData]);
 
-  // Refresh camera feed img tag independently
   useEffect(() => {
     if (!tracking) return;
     const id = setInterval(() => setFrameTs(t => t + 1), 50);
     return () => clearInterval(id);
+  }, [tracking]);
+
+  useEffect(() => {
+    if (!tracking) return;
+    let running = true;
+    async function pollNT() {
+      while (running) {
+        try {
+          const data = await api.getNTStatus();
+          if (data.has_data || data.connected) setNtData(data);
+        } catch {}
+        await new Promise(r => setTimeout(r, 500));
+      }
+    }
+    pollNT();
+    return () => { running = false; };
   }, [tracking]);
 
   const handleStartTracking = async () => {
@@ -46,6 +69,7 @@ export default function DashboardPage() {
     setPath([]);
     setCurrentPos(null);
     setSummary(null);
+    setNtData(null);
     setLiveSpeed(0); setLiveAccel(0); setLiveG(0); setLiveConfidence(0);
   };
 
@@ -61,6 +85,7 @@ export default function DashboardPage() {
       name: `${practiceType} - ${new Date().toLocaleTimeString()}`,
       driver: driverName,
       practice_type: practiceType,
+      session_id: sessionId || undefined,
     });
     setRunId(res.run_id);
     setRunActive(true);
@@ -135,6 +160,18 @@ export default function DashboardPage() {
                 style={inputStyle}
               />
             </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+              <select
+                value={sessionId}
+                onChange={e => setSessionId(Number(e.target.value))}
+                style={{ ...selectStyle, flex: 1 }}
+              >
+                <option value={0}>No session</option>
+                {sessions.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               {!tracking ? (
                 <button onClick={handleStartTracking} style={btnPrimary}>
@@ -169,6 +206,22 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+
+          {ntData && ntData.connected && (
+            <div style={cardStyle}>
+              <h3 style={h3Style}>Robot Telemetry (NetworkTables)</h3>
+              <div style={statsGridStyle}>
+                <StatBox label="Robot X" value={ntData.robot_x?.toFixed(2) ?? '-'} unit="ft" color="var(--fmc-blue)" />
+                <StatBox label="Robot Y" value={ntData.robot_y?.toFixed(2) ?? '-'} unit="ft" color="var(--fmc-blue)" />
+                <StatBox label="Heading" value={ntData.robot_heading?.toFixed(1) ?? '-'} unit="°" color="var(--fmc-alert-orange)" />
+                <StatBox label="Robot Speed" value={ntData.robot_speed?.toFixed(2) ?? '-'} unit="ft/s" color="var(--fmc-motion-green)" />
+                <StatBox label="Battery" value={ntData.battery_voltage?.toFixed(1) ?? '-'} unit="V" />
+                <StatBox label="Match Time" value={ntData.match_time?.toFixed(0) ?? '-'} unit="s" />
+                <StatBox label="Enabled" value={ntData.robot_enabled ? 'YES' : 'NO'} unit="" color={ntData.robot_enabled ? 'var(--fmc-motion-green)' : 'var(--fmc-danger)'} />
+                <StatBox label="NT Status" value={ntData.connected ? 'OK' : '--'} unit="" color={ntData.connected ? 'var(--fmc-motion-green)' : 'var(--fmc-danger)'} />
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

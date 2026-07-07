@@ -33,6 +33,7 @@ export interface RunSummary {
   driver: string;
   robot_config: string;
   practice_type: string;
+  session_id: number | null;
   created_at: string;
   duration_s: number;
   max_speed_ft_per_s: number;
@@ -42,6 +43,31 @@ export interface RunSummary {
   time_moving_s: number;
   time_stopped_s: number;
   sample_count: number;
+}
+
+export interface SessionSummary {
+  id: number;
+  name: string;
+  practice_type: string;
+  driver: string;
+  robot_config: string;
+  team: string;
+  notes: string;
+  session_date: string;
+  created_at: string;
+  run_count: number;
+}
+
+export interface RunDetail {
+  id: number;
+  name: string;
+  driver: string;
+  robot_config: string;
+  practice_type: string;
+  session_id: number | null;
+  created_at: string;
+  notes: string;
+  summary_metrics: Record<string, number>;
 }
 
 export interface TrackingSample {
@@ -54,17 +80,6 @@ export interface TrackingSample {
   estimated_g: number;
   confidence: number;
   state: string;
-}
-
-export interface RunDetail {
-  id: number;
-  name: string;
-  driver: string;
-  robot_config: string;
-  practice_type: string;
-  created_at: string;
-  notes: string;
-  summary_metrics: Record<string, number>;
 }
 
 export const api = {
@@ -149,4 +164,22 @@ export const api = {
       body: JSON.stringify({ server }),
     }),
   disconnectNT: () => request<{ status: string }>('/networktables/disconnect', { method: 'POST' }),
+
+  // Sessions
+  getSessions: () => request<SessionSummary[]>('/sessions'),
+  getSession: (id: number) => request<any>(`/sessions/${id}`),
+  createSession: (data: any) =>
+    request<{ status: string; session_id: number }>('/sessions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateSession: (id: number, data: any) =>
+    request<{ status: string }>(`/sessions/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  deleteSession: (id: number) =>
+    request<{ status: string; session_id: number }>(`/sessions/${id}`, {
+      method: 'DELETE',
+    }),
 };

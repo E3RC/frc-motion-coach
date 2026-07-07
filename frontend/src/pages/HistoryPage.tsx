@@ -1,12 +1,21 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { api, RunSummary } from '../api/client';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { api, RunSummary, SessionSummary } from '../api/client';
 
 export default function HistoryPage() {
   const [runs, setRuns] = useState<RunSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<number[]>([]);
+  const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [sessionFilter, setSessionFilter] = useState<number | null>(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const sid = searchParams.get('session');
+    if (sid) setSessionFilter(Number(sid));
+    api.getSessions().then(setSessions).catch(() => {});
+  }, []);
 
   const loadRuns = () => {
     api.getRuns().then(r => {
@@ -16,6 +25,12 @@ export default function HistoryPage() {
   };
 
   useEffect(loadRuns, []);
+
+  const filteredRuns = sessionFilter
+    ? runs.filter(r => r.session_id === sessionFilter)
+    : runs;
+
+  const currentSession = sessions.find(s => s.id === sessionFilter);
 
   const exportCSV = async (id: number) => {
     window.open(`/api/runs/${id}/export.csv`, '_blank');
@@ -65,26 +80,53 @@ export default function HistoryPage() {
         }}>
           Run History
         </h2>
-        <span style={{ fontSize: 13, color: 'var(--fmc-text-muted)' }}>
-          {runs.length} run{runs.length !== 1 ? 's' : ''} saved
-        </span>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          {sessions.length > 0 && (
+            <select
+              value={sessionFilter ?? ''}
+              onChange={e => {
+                const val = e.target.value ? Number(e.target.value) : null;
+                setSessionFilter(val);
+                navigate(val ? `/history?session=${val}` : '/history', { replace: true });
+              }}
+              style={{
+                padding: '5px 10px', borderRadius: 6, border: '1px solid var(--fmc-border)',
+                background: 'var(--fmc-bg)', color: 'var(--fmc-text)', fontSize: 12,
+                fontFamily: 'var(--fmc-font-ui)',
+              }}
+            >
+              <option value="">All sessions</option>
+              {sessions.map(s => (
+                <option key={s.id} value={s.id}>{s.name} ({s.run_count})</option>
+              ))}
+            </select>
+          )}
+          <span style={{ fontSize: 13, color: 'var(--fmc-text-muted)' }}>
+            {filteredRuns.length} run{filteredRuns.length !== 1 ? 's' : ''}
+            {sessionFilter ? ` in ${currentSession?.name ?? 'session'}` : ''}
+          </span>
+        </div>
       </div>
 
-      {runs.length === 0 ? (
+      {filteredRuns.length === 0 ? (
         <div style={{
           background: 'var(--fmc-surface)', borderRadius: 12, padding: 40,
           textAlign: 'center', color: 'var(--fmc-text-muted)',
           border: '1px solid var(--fmc-border)'
         }}>
           <div style={{ fontSize: 40, marginBottom: 8, opacity: 0.3 }}>🏁</div>
-          <div style={{ fontWeight: 600 }}>No runs recorded yet</div>
+          <div style={{ fontWeight: 600 }}>
+            {sessionFilter ? 'No runs in this session' : 'No runs recorded yet'}
+          </div>
           <div style={{ fontSize: 12, marginTop: 4 }}>
-            Go to the Live Dashboard to start a recording.
+            {sessionFilter
+              ? 'Select a different session or clear the filter.'
+              : 'Go to the Live Dashboard to start a recording.'}
           </div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {runs.map(run => (
+          {filteredRuns.map(run => (
             <div
               key={run.id}
               style={{

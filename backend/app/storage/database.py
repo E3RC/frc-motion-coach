@@ -26,6 +26,20 @@ class CalibrationProfileModel(Base):
     notes = Column(Text, default="")
 
 
+class SessionModel(Base):
+    __tablename__ = "sessions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    practice_type = Column(String(50), default="")
+    driver = Column(String(255), default="")
+    robot_config = Column(String(255), default="")
+    team = Column(String(255), default="")
+    notes = Column(Text, default="")
+    session_date = Column(String(20), default="")
+
+
 class RunModel(Base):
     __tablename__ = "runs"
 
@@ -36,6 +50,7 @@ class RunModel(Base):
     robot_config = Column(String(255), default="")
     practice_type = Column(String(255), default="")
     calibration_profile_id = Column(Integer, nullable=True)
+    session_id = Column(Integer, nullable=True)
     video_file_path = Column(String(500), default="")
     notes = Column(Text, default="")
     summary_metrics_json = Column(Text, default="{}")
@@ -144,6 +159,40 @@ class Database:
             return session.query(TrackingSampleModel).filter_by(
                 run_id=run_id
             ).order_by(TrackingSampleModel.frame_number).all()
+
+    def save_session(self, data: dict) -> int:
+        with self.get_session() as session:
+            model = SessionModel(**data)
+            session.add(model)
+            session.commit()
+            return model.id
+
+    def get_sessions(self) -> list:
+        with self.get_session() as session:
+            return session.query(SessionModel).order_by(
+                SessionModel.created_at.desc()
+            ).all()
+
+    def get_session_by_id(self, sess_id: int) -> Optional[SessionModel]:
+        with self.get_session() as session:
+            return session.query(SessionModel).filter_by(id=sess_id).first()
+
+    def update_session(self, sess_id: int, data: dict):
+        with self.get_session() as session:
+            session.query(SessionModel).filter_by(id=sess_id).update(data)
+            session.commit()
+
+    def delete_session(self, sess_id: int):
+        with self.get_session() as session:
+            session.query(RunModel).filter_by(session_id=sess_id).update({"session_id": None})
+            session.query(SessionModel).filter_by(id=sess_id).delete()
+            session.commit()
+
+    def get_runs_by_session(self, sess_id: int) -> list:
+        with self.get_session() as session:
+            return session.query(RunModel).filter_by(
+                session_id=sess_id
+            ).order_by(RunModel.created_at.desc()).all()
 
     def close(self):
         self.engine.dispose()
