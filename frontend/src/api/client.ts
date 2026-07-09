@@ -125,6 +125,11 @@ export const api = {
     request<{ status: string; run_id: number }>(`/runs/${id}`, {
       method: 'DELETE',
     }),
+  updateRun: (id: number, data: { name?: string; driver?: string; robot_config?: string; practice_type?: string; notes?: string }) =>
+    request<{ status: string; run_id: number }>(`/runs/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
   getRun: (id: number) => request<RunDetail>(`/runs/${id}`),
   getSamples: (id: number) => request<TrackingSample[]>(`/runs/${id}/samples`),
   getRunSummary: (id: number) => request<Record<string, number>>(`/runs/${id}/summary`),

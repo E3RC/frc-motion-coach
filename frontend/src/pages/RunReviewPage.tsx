@@ -13,6 +13,10 @@ export default function RunReviewPage() {
   const [playIndex, setPlayIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [editTitle, setEditTitle] = useState(false);
+  const [editTitleVal, setEditTitleVal] = useState('');
+  const [editNotes, setEditNotes] = useState(false);
+  const [editNotesVal, setEditNotesVal] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -43,6 +47,25 @@ export default function RunReviewPage() {
   const replayPath = samples.slice(0, playIndex).map(s => ({ x: s.field_x, y: s.field_y }));
   const replayPos = samples[playIndex] ? { x: samples[playIndex].field_x, y: samples[playIndex].field_y } : null;
 
+  const handleSaveTitle = async () => {
+    if (!id || !run) return;
+    const val = editTitleVal.replace(/^Run #\d+$/, '').trim();
+    try {
+      await api.updateRun(Number(id), { name: val || editTitleVal });
+      setRun({ ...run, name: val || editTitleVal });
+      setEditTitle(false);
+    } catch { alert('Failed to save title.'); }
+  };
+
+  const handleSaveNotes = async () => {
+    if (!id || !run) return;
+    try {
+      await api.updateRun(Number(id), { notes: editNotesVal });
+      setRun({ ...run, notes: editNotesVal });
+      setEditNotes(false);
+    } catch { alert('Failed to save notes.'); }
+  };
+
   const speedData = samples.map((s) => ({
     time: s.timestamp.toFixed(1),
     speed: Number(s.speed.toFixed(2)),
@@ -69,16 +92,30 @@ export default function RunReviewPage() {
       </button>
 
       <div style={cardStyle}>
-        <h2 style={{
-          margin: '0 0 4px', color: 'var(--fmc-text)',
-          fontFamily: 'var(--fmc-font-display)', fontWeight: 700,
-        }}>
-          {run.name || `Run #${run.id}`}
-        </h2>
-        <div style={{ fontSize: 13, color: 'var(--fmc-text-muted)', marginBottom: 16 }}>
-          {new Date(run.created_at).toLocaleString()}
-          {run.driver ? ` — Driver: ${run.driver}` : ''}
-          {run.robot_config ? ` — Robot: ${run.robot_config}` : ''}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h2 style={{
+              margin: '0 0 4px', color: 'var(--fmc-text)',
+              fontFamily: 'var(--fmc-font-display)', fontWeight: 700,
+            }}>
+              {editTitle ? (
+                <input value={editTitleVal} onChange={e => setEditTitleVal(e.target.value)}
+                  onBlur={handleSaveTitle} onKeyDown={e => { if (e.key === 'Enter') handleSaveTitle(); if (e.key === 'Escape') setEditTitle(false); }}
+                  style={{ fontSize: 18, fontWeight: 700, fontFamily: 'var(--fmc-font-display)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--fmc-border)', background: 'var(--fmc-bg)', color: 'var(--fmc-text)', width: '100%', boxSizing: 'border-box' }}
+                  autoFocus
+                />
+              ) : (
+                <span style={{ cursor: 'pointer' }} onClick={() => { setEditTitleVal(run.name || `Run #${run.id}`); setEditTitle(true); }}>
+                  {run.name || `Run #${run.id}`} ✎
+                </span>
+              )}
+            </h2>
+            <div style={{ fontSize: 13, color: 'var(--fmc-text-muted)', marginBottom: 16 }}>
+              {new Date(run.created_at).toLocaleString()}
+              {run.driver ? ` — Driver: ${run.driver}` : ''}
+              {run.robot_config ? ` — Robot: ${run.robot_config}` : ''}
+            </div>
+          </div>
         </div>
 
         <div style={{
@@ -93,6 +130,34 @@ export default function RunReviewPage() {
           <Metric label="Distance" value={`${run.summary_metrics.total_distance_ft?.toFixed(1) ?? '-'} ft`} />
           <Metric label="Moving" value={`${run.summary_metrics.time_moving_s?.toFixed(1) ?? '-'}s`} color="var(--fmc-motion-green)" />
           <Metric label="Stopped" value={`${run.summary_metrics.time_stopped_s?.toFixed(1) ?? '-'}s`} color="var(--fmc-danger)" />
+        </div>
+
+        <div style={{ paddingTop: 12, borderTop: '1px solid var(--fmc-border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <div style={{ fontSize: 10, color: 'var(--fmc-text-muted)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>Notes</div>
+            <button onClick={() => { if (!editNotes) setEditNotesVal(run.notes || ''); setEditNotes(!editNotes); }} style={{
+              padding: '2px 8px', background: 'var(--fmc-border)', color: 'var(--fmc-text)',
+              border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 10, fontWeight: 600,
+              fontFamily: 'var(--fmc-font-ui)',
+            }}>
+              {editNotes ? 'Cancel' : (run.notes ? 'Edit' : 'Add')}
+            </button>
+          </div>
+          {editNotes ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <textarea value={editNotesVal} onChange={e => setEditNotesVal(e.target.value)}
+                placeholder="Add notes about this run..."
+                style={{ width: '100%', minHeight: 60, resize: 'vertical', boxSizing: 'border-box', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--fmc-border)', background: 'var(--fmc-bg)', color: 'var(--fmc-text)', fontSize: 12, fontFamily: 'var(--fmc-font-ui)' }} />
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button onClick={handleSaveNotes} style={{ padding: '5px 14px', background: 'var(--fmc-blue)', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 700, fontSize: 11, fontFamily: 'var(--fmc-font-ui)' }}>Save</button>
+                <button onClick={() => setEditNotes(false)} style={{ padding: '5px 14px', background: 'var(--fmc-border)', color: 'var(--fmc-text)', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600, fontSize: 11, fontFamily: 'var(--fmc-font-ui)' }}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: 'var(--fmc-text-muted)', lineHeight: 1.5, minHeight: 20 }}>
+              {run.notes || <span style={{ fontStyle: 'italic', opacity: 0.5 }}>No notes</span>}
+            </div>
+          )}
         </div>
       </div>
 

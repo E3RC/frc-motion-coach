@@ -90,6 +90,14 @@ class RunStopRequest(BaseModel):
     summary_metrics: dict = {}
 
 
+class RunUpdateRequest(BaseModel):
+    name: Optional[str] = Field(default=None, max_length=255)
+    driver: Optional[str] = Field(default=None, max_length=255)
+    robot_config: Optional[str] = Field(default=None, max_length=255)
+    practice_type: Optional[str] = Field(default=None, max_length=255)
+    notes: Optional[str] = None
+
+
 class EventCreateRequest(BaseModel):
     event_type: str
     label: str = ""
@@ -512,6 +520,18 @@ def delete_run(run_id: int):
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
     db.delete_run(run_id)
+    return {"status": "ok", "run_id": run_id}
+
+
+@router.patch("/runs/{run_id}")
+def update_run(run_id: int, req: RunUpdateRequest):
+    db = get_db()
+    run = db.get_run(run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+    data = req.model_dump(exclude_none=True)
+    if data:
+        db.update_run(run_id, data)
     return {"status": "ok", "run_id": run_id}
 
 

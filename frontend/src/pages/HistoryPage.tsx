@@ -6,6 +6,8 @@ export default function HistoryPage() {
   const [runs, setRuns] = useState<RunSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<number[]>([]);
+  const [editingRun, setEditingRun] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<{ name: string; driver: string; notes: string }>({ name: '', driver: '', notes: '' });
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [sessionFilter, setSessionFilter] = useState<number | null>(null);
   const navigate = useNavigate();
@@ -48,6 +50,22 @@ export default function HistoryPage() {
       setSelected(prev => prev.filter(s => s !== id));
     } catch (err) {
       alert('Failed to delete run.');
+    }
+  };
+
+  const handleEdit = (run: RunSummary, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingRun(run.id);
+    setEditForm({ name: run.name || '', driver: run.driver || '', notes: (run as any).notes || '' });
+  };
+
+  const handleSaveEdit = async (id: number) => {
+    try {
+      await api.updateRun(id, editForm);
+      setRuns(prev => prev.map(r => r.id === id ? { ...r, ...editForm } : r));
+      setEditingRun(null);
+    } catch (err) {
+      alert('Failed to update run.');
     }
   };
 
@@ -161,6 +179,12 @@ export default function HistoryPage() {
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button
+                    onClick={(e) => { handleEdit(run, e); }}
+                    style={smallBtnStyle}
+                  >
+                    Edit
+                  </button>
+                  <button
                     onClick={(e) => { e.stopPropagation(); exportCSV(run.id); }}
                     style={smallBtnStyle}
                   >
@@ -214,6 +238,22 @@ export default function HistoryPage() {
                   <div style={{ color: 'var(--fmc-danger)', fontWeight: 700 }}>{run.time_stopped_s.toFixed(1)}s</div>
                 </div>
               </div>
+
+              {editingRun === run.id && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--fmc-border)', display: 'flex', flexDirection: 'column', gap: 8 }}
+                  onClick={e => e.stopPropagation()}>
+                  <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                    placeholder="Run name" style={editInputStyle} />
+                  <input value={editForm.driver} onChange={e => setEditForm(f => ({ ...f, driver: e.target.value }))}
+                    placeholder="Driver name" style={editInputStyle} />
+                  <input value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
+                    placeholder="Notes" style={editInputStyle} />
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => handleSaveEdit(run.id)} style={editSaveBtnStyle}>Save</button>
+                    <button onClick={(e) => { e.stopPropagation(); setEditingRun(null); }} style={editCancelBtnStyle}>Cancel</button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -238,4 +278,22 @@ const smallBtnStyle: React.CSSProperties = {
   padding: '4px 8px', background: 'var(--fmc-border)', color: 'var(--fmc-text-muted)',
   border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11,
   fontWeight: 600, fontFamily: 'var(--fmc-font-ui)',
+};
+
+const editInputStyle: React.CSSProperties = {
+  padding: '6px 10px', borderRadius: 6, border: '1px solid var(--fmc-border)',
+  background: 'var(--fmc-bg)', color: 'var(--fmc-text)', fontSize: 13,
+  fontFamily: 'var(--fmc-font-ui)', boxSizing: 'border-box', width: '100%',
+};
+
+const editSaveBtnStyle: React.CSSProperties = {
+  padding: '6px 16px', background: 'var(--fmc-blue)', color: 'white',
+  border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 700, fontSize: 12,
+  fontFamily: 'var(--fmc-font-ui)',
+};
+
+const editCancelBtnStyle: React.CSSProperties = {
+  padding: '6px 16px', background: 'var(--fmc-border)', color: 'var(--fmc-text)',
+  border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600, fontSize: 12,
+  fontFamily: 'var(--fmc-font-ui)',
 };
