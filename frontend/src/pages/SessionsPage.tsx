@@ -20,16 +20,24 @@ export default function SessionsPage() {
 
   const handleCreate = async () => {
     if (!form.name.trim()) return;
-    await api.createSession(form);
-    setShowCreate(false);
-    setForm({ name: '', practice_type: 'Driver Practice', driver: '', robot_config: '', team: '', notes: '', session_date: '' });
-    load();
+    try {
+      await api.createSession(form);
+      setShowCreate(false);
+      setForm({ name: '', practice_type: 'Driver Practice', driver: '', robot_config: '', team: '', notes: '', session_date: '' });
+      load();
+    } catch (err) {
+      console.error('Failed to create session', err);
+    }
   };
 
   const handleDelete = async (id: number, name: string) => {
     if (!confirm(`Delete session "${name}"? Runs will be unlinked but not deleted.`)) return;
-    await api.deleteSession(id);
-    load();
+    try {
+      await api.deleteSession(id);
+      load();
+    } catch (err) {
+      console.error('Failed to delete session', err);
+    }
   };
 
   return (

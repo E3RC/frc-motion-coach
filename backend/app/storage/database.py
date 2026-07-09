@@ -3,7 +3,7 @@ import json
 import os
 from datetime import datetime, timezone
 from typing import Optional
-from sqlalchemy import create_engine, Column, Integer, Float, String, Text, JSON, DateTime
+from sqlalchemy import create_engine, Column, Integer, Float, String, Text, JSON, DateTime, ForeignKey, func
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 Base = declarative_base()
@@ -50,7 +50,7 @@ class RunModel(Base):
     robot_config = Column(String(255), default="")
     practice_type = Column(String(255), default="")
     calibration_profile_id = Column(Integer, nullable=True)
-    session_id = Column(Integer, nullable=True)
+    session_id = Column(Integer, ForeignKey("sessions.id", ondelete="SET NULL"), nullable=True)
     video_file_path = Column(String(500), default="")
     notes = Column(Text, default="")
     summary_metrics_json = Column(Text, default="{}")
@@ -170,6 +170,17 @@ class Database:
     def get_sessions(self) -> list:
         with self.get_session() as session:
             return session.query(SessionModel).order_by(
+                SessionModel.created_at.desc()
+            ).all()
+
+    def get_sessions_with_run_counts(self) -> list[tuple]:
+        with self.get_session() as session:
+            return session.query(
+                SessionModel,
+                func.count(RunModel.id).label("run_count"),
+            ).outerjoin(
+                RunModel, RunModel.session_id == SessionModel.id
+            ).group_by(SessionModel.id).order_by(
                 SessionModel.created_at.desc()
             ).all()
 

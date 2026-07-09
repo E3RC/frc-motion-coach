@@ -10,7 +10,7 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<any>(null);
   const [practiceType, setPracticeType] = useState('Driver Practice');
   const [driverName, setDriverName] = useState('');
-  const [sessionId, setSessionId] = useState<number | 0>(0);
+  const [sessionId, setSessionId] = useState<number>(0);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [path, setPath] = useState<{ x: number; y: number }[]>([]);
   const [currentPos, setCurrentPos] = useState<{ x: number; y: number } | null>(null);
@@ -49,18 +49,17 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!tracking) return;
-    let running = true;
-    async function pollNT() {
-      while (running) {
+    const ctrl = new AbortController();
+    (async () => {
+      while (!ctrl.signal.aborted) {
         try {
           const data = await api.getNTStatus();
           if (data.has_data || data.connected) setNtData(data);
         } catch {}
         await new Promise(r => setTimeout(r, 500));
       }
-    }
-    pollNT();
-    return () => { running = false; };
+    })();
+    return () => ctrl.abort();
   }, [tracking]);
 
   const handleStartTracking = async () => {

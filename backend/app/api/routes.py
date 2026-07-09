@@ -2,13 +2,14 @@
 import json
 import csv
 import io
+import re
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
-from ..storage.database import Database
+from ..storage.database import Database, SessionModel, RunModel
 from ..tracking.tracker import RobotState
 
 router = APIRouter(prefix="/api")
@@ -28,23 +29,51 @@ class CalibrationSaveRequest(BaseModel):
 
 
 class SessionCreateRequest(BaseModel):
-    name: str
-    practice_type: str = ""
-    driver: str = ""
-    robot_config: str = ""
-    team: str = ""
+    name: str = Field(..., min_length=1, max_length=255)
+    practice_type: str = Field(default="", max_length=50)
+    driver: str = Field(default="", max_length=255)
+    robot_config: str = Field(default="", max_length=255)
+    team: str = Field(default="", max_length=255)
     notes: str = ""
-    session_date: str = ""
+    session_date: str = Field(default="", max_length=20)
+
+    @field_validator("name")
+    @classmethod
+    def name_not_blank(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("name must not be blank")
+        return v.strip()
+
+    @field_validator("session_date")
+    @classmethod
+    def validate_date(cls, v: str) -> str:
+        if v and not re.match(r"^\d{4}-\d{2}-\d{2}$", v):
+            raise ValueError("session_date must be YYYY-MM-DD")
+        return v
 
 
 class SessionUpdateRequest(BaseModel):
-    name: Optional[str] = None
-    practice_type: Optional[str] = None
-    driver: Optional[str] = None
-    robot_config: Optional[str] = None
-    team: Optional[str] = None
+    name: Optional[str] = Field(default=None, max_length=255)
+    practice_type: Optional[str] = Field(default=None, max_length=50)
+    driver: Optional[str] = Field(default=None, max_length=255)
+    robot_config: Optional[str] = Field(default=None, max_length=255)
+    team: Optional[str] = Field(default=None, max_length=255)
     notes: Optional[str] = None
-    session_date: Optional[str] = None
+    session_date: Optional[str] = Field(default=None, max_length=20)
+
+    @field_validator("name")
+    @classmethod
+    def name_not_blank(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not v.strip():
+            raise ValueError("name must not be blank")
+        return v.strip() if v else v
+
+    @field_validator("session_date")
+    @classmethod
+    def validate_date(cls, v: Optional[str]) -> Optional[str]:
+        if v and not re.match(r"^\d{4}-\d{2}-\d{2}$", v):
+            raise ValueError("session_date must be YYYY-MM-DD")
+        return v
 
 
 class RunStartRequest(BaseModel):
@@ -204,11 +233,9 @@ def create_session(req: SessionCreateRequest):
 @router.get("/sessions")
 def list_sessions():
     db = get_db()
-    sessions = db.get_sessions()
-    result = []
-    for s in sessions:
-        runs = db.get_runs_by_session(s.id)
-        result.append({
+    rows = db.get_sessions_with_run_counts()
+    return [
+        {
             "id": s.id,
             "name": s.name,
             "practice_type": s.practice_type,
@@ -218,9 +245,10 @@ def list_sessions():
             "notes": s.notes,
             "session_date": s.session_date,
             "created_at": s.created_at.isoformat() if s.created_at else "",
-            "run_count": len(runs),
-        })
-    return result
+            "run_count": count,
+        }
+        for s, count in rows
+    ]
 
 
 @router.get("/sessions/{sess_id}")
@@ -283,6 +311,10 @@ active_run_id: Optional[int] = None
 def start_run(req: RunStartRequest):
     global active_run_id
     db = get_db()
+    if req.session_id is not None:
+        s = db.get_session_by_id(req.session_id)
+        if not s:
+            raise HTTPException(status_code=400, detail="session_id does not exist")
     run_id = db.save_run({
         "name": req.name,
         "driver": req.driver,

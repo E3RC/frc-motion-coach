@@ -58,6 +58,20 @@ export interface SessionSummary {
   run_count: number;
 }
 
+export interface SessionDetail extends SessionSummary {
+  runs: { id: number; name: string; driver: string; created_at: string }[];
+}
+
+export interface SessionCreateRequest {
+  name: string;
+  practice_type?: string;
+  driver?: string;
+  robot_config?: string;
+  team?: string;
+  notes?: string;
+  session_date?: string;
+}
+
 export interface RunDetail {
   id: number;
   name: string;
@@ -167,13 +181,13 @@ export const api = {
 
   // Sessions
   getSessions: () => request<SessionSummary[]>('/sessions'),
-  getSession: (id: number) => request<any>(`/sessions/${id}`),
-  createSession: (data: any) =>
+  getSession: (id: number) => request<SessionDetail>(`/sessions/${id}`),
+  createSession: (data: SessionCreateRequest) =>
     request<{ status: string; session_id: number }>('/sessions', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-  updateSession: (id: number, data: any) =>
+  updateSession: (id: number, data: Partial<SessionCreateRequest>) =>
     request<{ status: string }>(`/sessions/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),

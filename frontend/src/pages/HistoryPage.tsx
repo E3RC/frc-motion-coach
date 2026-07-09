@@ -13,9 +13,9 @@ export default function HistoryPage() {
 
   useEffect(() => {
     const sid = searchParams.get('session');
-    if (sid) setSessionFilter(Number(sid));
+    setSessionFilter(sid ? Number(sid) : null);
     api.getSessions().then(setSessions).catch(() => {});
-  }, []);
+  }, [searchParams]);
 
   const loadRuns = () => {
     api.getRuns().then(r => {
